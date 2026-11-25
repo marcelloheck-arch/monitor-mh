@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<!-- MONITOR-MH-VERSAO: 2026-11-25 etapa 1 (lembretes, datas, infraestrutura) -->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0B3A5B">
+<title>Monitor MH</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230B3A5B'/%3E%3Cpath d='M5 17h6l3-7 4 13 3-6h6' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Cores pensadas para daltonismo: azul = ok, amarelo = atenção, vermelho escuro (texto branco) = crítico.
+   Toda cor vem acompanhada de texto e ícone. */
+:root {
+  --marinho: #0B3A5B;
+  --azul: #1769AA;
+  --azul-claro: #EAF4FA;
+  --amarelo: #E9A227;
+  --amarelo-claro: #FFF4DD;
+  --amarelo-texto: #6B4A00;
+  --critico: #8E2C2A;
+  --critico-claro: #FBEDEC;
+  --fundo: #F4F6F8;
+  --card: #FFFFFF;
+  --borda: #E4E9EF;
+  --texto: #1B2733;
+  --suave: #5F6B76;
+  --cinza: #9AA5AF;
+  --sombra: 0 1px 2px rgba(11,58,91,0.06), 0 2px 8px rgba(11,58,91,0.05);
+  --raio: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --azul: #4FA3E0;
+    --azul-claro: #14283A;
+    --amarelo-claro: #2E2512;
+    --amarelo-texto: #F2C46B;
+    --critico: #B5413E;
+    --critico-claro: #33191A;
+    --fundo: #0E151C;
+    --card: #16202A;
+    --borda: #26333F;
+    --texto: #E6ECF1;
+    --suave: #9CAAB6;
+    --cinza: #5E6B76;
+    --sombra: none;
+  }
+}
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--fundo); color: var(--texto); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* TOPO */
+.topo { background: var(--marinho); color: #fff; position: sticky; top: 0; z-index: 50; padding: 0 16px; padding-top: env(safe-area-inset-top); box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+.topo-in { max-width: 1280px; margin: 0 auto; height: 58px; display: flex; align-items: center; gap: 12px; }
+.marca { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.marca-ic { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.marca-nome { font-weight: 700; font-size: 15px; white-space: nowrap; }
+.marca-nome span { font-weight: 400; color: rgba(255,255,255,0.65); }
+.batimento { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: rgba(255,255,255,0.8); white-space: nowrap; }
+.batimento i { width: 8px; height: 8px; border-radius: 50%; background: #7FC3F2; }
+.batimento.parado i { background: #FF8A80; }
+.btn-topo { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color: #fff; border-radius: 9px; height: 34px; min-width: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; cursor: pointer; }
+.btn-topo:hover { background: rgba(255,255,255,0.16); }
+.btn-topo.girando svg { animation: girar 0.8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.conteudo { max-width: 1280px; margin: 0 auto; padding: 14px 16px 40px; }
+.faixa-parado { display: none; background: var(--critico); color: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.45; gap: 10px; align-items: flex-start; }
+.faixa-parado.visivel { display: flex; }
+.faixa-erro { display: none; background: var(--amarelo-claro); color: var(--amarelo-texto); border: 1px solid var(--amarelo); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; }
+.faixa-erro.visivel { display: block; }
+
+/* SEMÁFORO */
+.secao-titulo { font-size: 12px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: 0.6px; margin: 4px 2px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.secao-titulo small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.semaforo { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.luz { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); padding: 12px 12px 11px; text-align: left; cursor: pointer; color: var(--texto); display: flex; flex-direction: column; gap: 8px; min-height: 88px; border-left: 5px solid var(--azul); transition: transform 0.1s; }
+.luz:active { transform: scale(0.98); }
+.luz .luz-topo { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.luz .luz-nome { font-size: 13px; font-weight: 700; }
+.luz .luz-ic { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--azul-claro); color: var(--azul); }
+.luz .luz-ic svg.ic { width: 15px; height: 15px; stroke-width: 2.6; }
+.luz .luz-status { font-size: 12.5px; font-weight: 600; color: var(--azul); }
+.luz.atencao { border-left-color: var(--amarelo); }
+.luz.atencao .luz-ic { background: var(--amarelo-claro); color: var(--amarelo-texto); }
+.luz.atencao .luz-status { color: var(--amarelo-texto); }
+.luz.critico { background: var(--critico); border-color: var(--critico); border-left-color: #5E1A19; color: #fff; }
+.luz.critico .luz-ic { background: rgba(255,255,255,0.18); color: #fff; }
+.luz.critico .luz-status { color: #fff; }
+.luz.breve { border-left: 1px dashed var(--borda); border-style: dashed; box-shadow: none; background: transparent; cursor: default; }
+.luz.breve .luz-ic { background: transparent; color: var(--cinza); border: 1.5px dashed var(--cinza); }
+.luz.breve .luz-status { color: var(--suave); font-weight: 500; }
+.luz.selecionada { outline: 3px solid var(--azul); outline-offset: 2px; }
+.luz.critico.selecionada { outline-color: var(--texto); }
+
+/* ALERTAS */
+.filtro-info { display: none; align-items: center; gap: 8px; font-size: 12.5px; color: var(--suave); margin: -4px 2px 10px; }
+.filtro-info.visivel { display: flex; }
+.filtro-info button { background: none; border: none; color: var(--azul); font-weight: 600; cursor: pointer; font-size: 12.5px; padding: 4px; }
+.lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+.alerta { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); overflow: hidden; border-left: 5px solid var(--amarelo); }
+.alerta.critico { border-left-color: var(--critico); }
+.alerta-corpo { padding: 12px 14px; }
+.alerta-linha1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.selo { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--amarelo-claro); color: var(--amarelo-texto); }
+.selo svg.ic { width: 12px; height: 12px; stroke-width: 2.6; }
+.alerta.critico .selo { background: var(--critico); color: #fff; }
+.area-tag { font-size: 11.5px; font-weight: 600; color: var(--suave); }
+.alerta-titulo { font-size: 14.5px; font-weight: 650; line-height: 1.4; word-break: break-word; }
+.alerta-meta { font-size: 12px; color: var(--suave); margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.alerta-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.alerta-meta svg.ic { width: 13px; height: 13px; }
+.detalhe { display: none; margin-top: 10px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; color: var(--texto); }
+.alerta.aberto .detalhe { display: block; }
+.detalhe a { color: var(--azul); }
+.alerta-acoes { display: flex; border-top: 1px solid var(--borda); }
+.alerta-acoes button { flex: 1; background: none; border: none; padding: 11px 8px; font-size: 13px; font-weight: 600; color: var(--azul); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; }
+.alerta-acoes button + button { border-left: 1px solid var(--borda); }
+.alerta-acoes button:hover { background: var(--azul-claro); }
+.alerta-acoes button:disabled { opacity: 0.5; cursor: wait; }
+.vazio { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); padding: 26px 16px; text-align: center; color: var(--suave); font-size: 13.5px; }
+.vazio strong { display: block; color: var(--azul); font-size: 15px; margin-bottom: 4px; }
+
+/* SILENCIADOS E HISTÓRICO */
+details.bloco { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); margin-bottom: 14px; }
+details.bloco > summary { list-style: none; cursor: pointer; padding: 13px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 700; }
+details.bloco > summary::-webkit-details-marker { display: none; }
+details.bloco > summary .cont { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--azul-claro); color: var(--azul); }
+details.bloco > summary .seta { transition: transform 0.15s; color: var(--suave); }
+details.bloco[open] > summary .seta { transform: rotate(180deg); }
+.bloco-desc { font-size: 12px; color: var(--suave); padding: 0 14px 8px; line-height: 1.45; }
+.hist-dia { font-size: 11.5px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px 4px; }
+.hist-item { display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--borda); align-items: flex-start; }
+.hist-ponto { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: var(--amarelo); }
+.hist-ponto.critico { background: var(--critico); border-radius: 2px; }
+.hist-txt { flex: 1; min-width: 0; }
+.hist-titulo { font-size: 13px; line-height: 1.4; word-break: break-word; }
+.hist-meta { font-size: 11.5px; color: var(--suave); margin-top: 2px; }
+.hist-vazio { padding: 14px; font-size: 13px; color: var(--suave); border-top: 1px solid var(--borda); }
+.rodape { font-size: 11.5px; color: var(--suave); text-align: center; margin-top: 8px; }
+
+/* LAYOUT DESKTOP */
+.colunas { display: grid; grid-template-columns: 1fr; gap: 0 22px; }
+@media (min-width: 720px) { .semaforo { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 1040px) {
+  .colunas { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
+  .lateral { position: sticky; top: 74px; }
+}
+@media (max-width: 420px) { .marca-nome span { display: none; } .batimento { font-size: 11px; } }
+
+/* LOGIN */
+.login { display: none; position: fixed; inset: 0; background: rgba(11,58,91,0.55); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+.login.visivel { display: flex; }
+.login-caixa { background: var(--card); color: var(--texto); border-radius: 16px; padding: 24px; width: 380px; max-width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+.login-caixa h1 { font-size: 17px; margin-bottom: 6px; }
+.login-caixa p { font-size: 13px; color: var(--suave); line-height: 1.5; margin-bottom: 14px; }
+.login-caixa input { width: 100%; height: 46px; padding: 0 13px; border: 1.5px solid var(--borda); border-radius: 10px; font-size: 16px; font-family: inherit; background: var(--fundo); color: var(--texto); outline: none; margin-bottom: 10px; }
+.login-caixa input:focus { border-color: var(--azul); }
+.login-caixa label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--suave); margin-bottom: 14px; }
+.login-caixa button { width: 100%; height: 46px; background: var(--azul); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.login-erro { display: none; background: var(--critico-claro); color: var(--critico); font-size: 12.5px; padding: 9px 12px; border-radius: 9px; margin-bottom: 10px; }
+.login-erro.visivel { display: block; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--marinho); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; opacity: 0; transition: all 0.2s; pointer-events: none; z-index: 120; max-width: calc(100% - 32px); }
+.toast.visivel { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pulso" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 13 2.5-7H21"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3.5L2.5 20h19L12 3.5z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+  <symbol id="i-exclama" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-repete" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/></symbol>
+  <symbol id="i-enviado" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-atualiza" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-sair" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></symbol>
+  <symbol id="i-detalhe" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="i-copiar" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></symbol>
+  <symbol id="i-breve" viewBox="0 0 24 24"><path d="M12 8v4"/><circle cx="12" cy="16" r=".5"/></symbol>
+</svg>
+
+<header class="topo">
+  <div class="topo-in">
+    <div class="marca">
+      <div class="marca-ic"><svg class="ic"><use href="#i-pulso"/></svg></div>
+      <div class="marca-nome">Monitor <span>· Cardiocenter</span></div>
+    </div>
+    <span class="batimento" id="batimento" title="Hora da última checagem automática (roda a cada 10 min)"><i></i><span id="batimento-txt">—</span></span>
+    <button class="btn-topo" id="btn-atualiza" onclick="carregar()" title="Atualizar agora" aria-label="Atualizar agora"><svg class="ic"><use href="#i-atualiza"/></svg></button>
+    <button class="btn-topo" onclick="sair()" title="Sair deste aparelho" aria-label="Sair"><svg class="ic"><use href="#i-sair"/></svg></button>
+  </div>
+</header>
+
+<main class="conteudo">
+  <div class="faixa-parado" id="faixa-parado"><svg class="ic"><use href="#i-alerta"/></svg><div id="faixa-parado-txt"></div></div>
+  <div class="faixa-erro" id="faixa-erro"></div>
+
+  <div class="secao-titulo"><span>Situação agora</span><small id="resumo-topo"></small></div>
+  <div class="semaforo" id="semaforo"></div>
+
+  <div class="colunas">
+    <section>
+      <div class="secao-titulo"><span>Alertas abertos</span><small id="cont-abertos"></small></div>
+      <div class="filtro-info" id="filtro-info"><span id="filtro-txt"></span><button onclick="filtrar(null)">Mostrar todos</button></div>
+      <div class="lista" id="lista-abertos"><div class="vazio">Carregando…</div></div>
+    </section>
+    <aside class="lateral">
+      <details class="bloco" id="bloco-silenciados">
+        <summary><span>Silenciados, ainda acontecendo</span><span style="display:flex;align-items:center;gap:8px"><span class="cont num" id="cont-silenciados">0</span><svg class="ic seta"><use href="#i-seta"/></svg></span></summary>
+        <div class="bloco-desc">Você marcou como resolvido, mas a condição continua. Não avisa de novo; se o problema sumir e voltar depois, o alerta reabre.</div>
+        <div id="lista-silenciados"></div>
+      </details>
+      <details class="bloco" id="bloco-historico" open>
+        <summary><span>Últimos 7 dias</span><span style="display:flex;align-items:center;gap:8px"><span class="cont num" id="cont-historico">0</span><svg class="ic seta"><use href="#i-seta"/></svg></span></summary>
+        <div id="lista-historico"></div>
+      </details>
+      <div class="rodape" id="rodape"></div>
+    </aside>
+  </div>
+</main>
+
+<div class="login" id="login">
+  <div class="login-caixa">
+    <h1>Monitor da operação</h1>
+    <p>Acesso restrito. Digite o token do monitor (é diferente do token do painel e do dashboard).</p>
+    <div class="login-erro" id="login-erro"></div>
+    <input type="password" id="login-token" placeholder="Token do monitor" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();entrar();}">
+    <label><input type="checkbox" id="login-lembrar" checked style="width:auto;height:auto;margin:0"> Lembrar neste aparelho</label>
+    <button onclick="entrar()">Entrar</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const WEBHOOK_URL = 'https://coldbloodedchameleon-n8n.cloudfy.live/webhook/monitor-mh';
+const CHAVE_TOKEN = 'monitor_mh_token';
+const BATIMENTO_LIMITE_MIN = 25;   // a checagem roda a cada 10 min
+const AREAS = [
+  { id: 'lembretes', nome: 'Lembretes' },
+  { id: 'datas', nome: 'Datas' },
+  { id: 'conversas', nome: 'Conversas', breve: true },
+  { id: 'ponte', nome: 'PONTE', breve: true },
+  { id: 'infra', nome: 'Infraestrutura' }
+];
+const NOME_AREA = Object.fromEntries(AREAS.map(a => [a.id, a.nome]));
+
+let tokenMem = '';
+let dados = null;
+let filtroArea = null;
+let carregando = false;
+
+/* ---------- token (localStorage pode falhar em aba anônima) ---------- */
+function lerToken() {
+  if (tokenMem) return tokenMem;
+  try { return localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) { return ''; }
+}
+function gravarToken(t, lembrar) {
+  tokenMem = t;
+  try { if (lembrar) localStorage.setItem(CHAVE_TOKEN, t); else localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
+}
+function apagarToken() { tokenMem = ''; try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {} }
+function mostrarLogin(msg) {
+  const e = document.getElementById('login-erro');
+  e.textContent = msg || ''; e.classList.toggle('visivel', !!msg);
+  document.getElementById('login-token').value = '';
+  document.getElementById('login').classList.add('visivel');
+  setTimeout(() => document.getElementById('login-token').focus(), 80);
+}
+function entrar() {
+  const t = document.getElementById('login-token').value.trim();
+  if (!t) return;
+  gravarToken(t, document.getElementById('login-lembrar').checked);
+  document.getElementById('login').classList.remove('visivel');
+  carregar();
+}
+function sair() {
+  if (!confirm('Sair do monitor neste aparelho? O token salvo aqui será apagado.')) return;
+  apagarToken(); location.reload();
+}
+
+/* ---------- utilidades ---------- */
+function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function linkar(txt) { return esc(txt).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">abrir ↗</a>`); }
+function ic(id) { return `<svg class="ic"><use href="#${id}"/></svg>`; }
+const fmtHora = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+const fmtDiaHora = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const fmtDia = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' });
+function relativo(iso) {
+  if (!iso) return '—';
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `há ${h} h${min % 60 ? ' ' + (min % 60) + ' min' : ''}`;
+  return fmtDiaHora.format(new Date(iso));
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('visivel');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('visivel'), 2600);
+}
+
+/* ---------- comunicação ---------- */
+async function chamar(corpo) {
+  const res = await fetch(WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ token: lerToken() }, corpo)),
+    cache: 'no-store'
+  });
+  const txt = await res.text();
+  let j = null;
+  try { j = JSON.parse(txt); } catch (e) { throw new Error('Resposta inválida do servidor (HTTP ' + res.status + ')'); }
+  if (j && j.erro === 'nao_autorizado') { const e = new Error('nao_autorizado'); e.auth = true; throw e; }
+  return j;
+}
+async function carregar() {
+  if (!lerToken()) { mostrarLogin(); return; }
+  if (carregando) return;
+  carregando = true;
+  const btn = document.getElementById('btn-atualiza');
+  btn.classList.add('girando');
+  try {
+    dados = await chamar({ acao: 'listar' });
+    document.getElementById('faixa-erro').classList.remove('visivel');
+    render();
+  } catch (e) {
+    if (e.auth) { apagarToken(); mostrarLogin('Token incorreto. Digite de novo.'); }
+    else {
+      const f = document.getElementById('faixa-erro');
+      f.textContent = 'Não consegui falar com o n8n agora (' + e.message + '). Os dados abaixo podem estar desatualizados. Se continuar, o próprio n8n pode estar fora do ar.';
+      f.classList.add('visivel');
+    }
+  } finally {
+    carregando = false; btn.classList.remove('girando');
+  }
+}
+async function resolver(id, btn) {
+  const a = (dados.abertos || []).find(x => x.id === id);
+  if (!a) return;
+  const aviso = a.tipo === 'estado'
+    ? 'Marcar como resolvido?\n\nSe o problema ainda estiver acontecendo, ele fica silenciado. Se sumir e voltar depois, o alerta abre de novo.'
+    : 'Marcar como resolvido?\n\nEste alerta é fechado. Se o mesmo problema acontecer de novo, abre outro.';
+  if (!confirm(aviso)) return;
+  btn.disabled = true;
+  try {
+    dados = await chamar({ acao: 'resolver', id: String(id) });
+    render(); toast('Marcado como resolvido');
+  } catch (e) {
+    btn.disabled = false;
+    if (e.auth) { apagarToken(); mostrarLogin('Token incorreto. Digite de novo.'); }
+    else toast('Não consegui marcar agora. Tente de novo.');
+  }
+}
+function alternar(id) { document.getElementById('al-' + id).classList.toggle('aberto'); }
+async function copiar(id) {
+  const a = (dados.abertos || []).find(x => x.id === id) || (dados.silenciados || []).find(x => x.id === id);
+  if (!a) return;
+  try { await navigator.clipboard.writeText(a.titulo + '\n' + (a.detalhe || '')); toast('Copiado'); }
+  catch (e) { toast('Não foi possível copiar neste navegador'); }
+}
+function filtrar(area) {
+  filtroArea = (filtroArea === area) ? null : area;
+  render();
+}
+
+/* ---------- desenho ---------- */
+function render() {
+  if (!dados) return;
+  const abertos = dados.abertos || [];
+  const silenciados = dados.silenciados || [];
+  const historico = dados.historico || [];
+
+  // batimento do monitor
+  const ult = dados.ultima_checagem;
+  const minDesde = ult ? (Date.now() - new Date(ult).getTime()) / 60000 : Infinity;
+  const parado = minDesde > BATIMENTO_LIMITE_MIN;
+  const bat = document.getElementById('batimento');
+  bat.classList.toggle('parado', parado);
+  document.getElementById('batimento-txt').textContent = ult ? 'checado ' + relativo(ult) : 'nunca checado';
+  const fp = document.getElementById('faixa-parado');
+  fp.classList.toggle('visivel', parado);
+  document.getElementById('faixa-parado-txt').innerHTML = ult
+    ? `<strong>A checagem automática está parada</strong> desde ${esc(fmtDiaHora.format(new Date(ult)))}. Os alertas abaixo podem estar velhos e o Telegram não vai avisar nada. Conferir no n8n se o workflow <em>MONITOR MH – Checagens</em> está publicado.`
+    : '<strong>O monitor ainda não fez nenhuma checagem.</strong> Publicar o workflow <em>MONITOR MH – Checagens</em> no n8n.';
+
+  // semáforo
+  const porArea = {};
+  abertos.forEach(a => { (porArea[a.area] = porArea[a.area] || { critico: 0, atencao: 0 })[a.severidade]++; });
+  document.getElementById('semaforo').innerHTML = AREAS.map(ar => {
+    if (ar.breve) {
+      return `<div class="luz breve" aria-disabled="true"><div class="luz-topo"><span class="luz-nome">${ar.nome}</span><span class="luz-ic">${ic('i-breve')}</span></div><span class="luz-status">Etapa 2 · ainda não monitorado</span></div>`;
+    }
+    const c = porArea[ar.id] || { critico: 0, atencao: 0 };
+    const nivel = c.critico ? 'critico' : (c.atencao ? 'atencao' : 'ok');
+    const status = nivel === 'critico' ? `Crítico · ${c.critico}${c.atencao ? ' + ' + c.atencao + ' atenção' : ''}`
+                 : nivel === 'atencao' ? `Atenção · ${c.atencao}` : 'Tudo certo';
+    const icone = nivel === 'critico' ? 'i-alerta' : (nivel === 'atencao' ? 'i-exclama' : 'i-ok');
+    return `<button class="luz ${nivel === 'ok' ? '' : nivel} ${filtroArea === ar.id ? 'selecionada' : ''}" onclick="filtrar('${ar.id}')" aria-pressed="${filtroArea === ar.id}">
+      <div class="luz-topo"><span class="luz-nome">${ar.nome}</span><span class="luz-ic">${ic(icone)}</span></div>
+      <span class="luz-status num">${status}</span></button>`;
+  }).join('');
+  const nCrit = abertos.filter(a => a.severidade === 'critico').length;
+  const nAten = abertos.length - nCrit;
+  document.getElementById('resumo-topo').textContent = abertos.length
+    ? `${nCrit} crítico(s), ${nAten} de atenção` : 'nenhum alerta aberto';
+  document.title = nCrit ? `(${nCrit}) Monitor MH` : 'Monitor MH';
+
+  // lista de abertos
+  const lista = filtroArea ? abertos.filter(a => a.area === filtroArea) : abertos;
+  document.getElementById('filtro-info').classList.toggle('visivel', !!filtroArea);
+  document.getElementById('filtro-txt').textContent = filtroArea ? `Mostrando só ${NOME_AREA[filtroArea]}` : '';
+  document.getElementById('cont-abertos').textContent = abertos.length ? `${lista.length} de ${abertos.length}` : '';
+  document.getElementById('lista-abertos').innerHTML = lista.length ? lista.map(cardAlerta).join('') :
+    `<div class="vazio"><strong>${filtroArea ? 'Nada aberto em ' + esc(NOME_AREA[filtroArea]) : 'Nenhum alerta aberto'}</strong>As checagens de lembretes, datas e infraestrutura não encontraram problema.</div>`;
+
+  // silenciados
+  document.getElementById('cont-silenciados').textContent = silenciados.length;
+  document.getElementById('lista-silenciados').innerHTML = silenciados.length
+    ? silenciados.map(s => itemHist(s, `silenciado ${relativo(s.resolvido_em)} · ainda visto ${relativo(s.ultima_vez)}`)).join('')
+    : '<div class="hist-vazio">Nada silenciado.</div>';
+
+  // histórico agrupado por dia
+  document.getElementById('cont-historico').textContent = historico.length;
+  let html = '', diaAtual = '';
+  historico.forEach(h => {
+    const dia = fmtDia.format(new Date(h.resolvido_em));
+    if (dia !== diaAtual) { html += `<div class="hist-dia">${esc(dia)}</div>`; diaAtual = dia; }
+    const quem = h.resolvido_por === 'auto' ? 'fechou sozinho' : 'resolvido por você';
+    html += itemHist(h, `${NOME_AREA[h.area] || h.area} · ${quem} às ${fmtHora.format(new Date(h.resolvido_em))}`);
+  });
+  document.getElementById('lista-historico').innerHTML = html || '<div class="hist-vazio">Nenhum alerta nos últimos 7 dias.</div>';
+
+  document.getElementById('rodape').textContent = `Atualizado às ${fmtHora.format(new Date())} · atualiza sozinho a cada minuto`;
+}
+function cardAlerta(a) {
+  const crit = a.severidade === 'critico';
+  const meta = [
+    `<span>${ic('i-relogio')}desde ${esc(relativo(a.primeira_vez))}</span>`,
+    a.vezes_visto > 1 ? `<span>${ic('i-repete')}visto ${a.vezes_visto}x</span>` : '',
+    crit ? `<span>${ic('i-enviado')}${a.notificado_em ? 'avisado no Telegram' : 'aviso pendente'}</span>` : '',
+    a.tipo === 'estado' ? '<span>fecha sozinho quando normalizar</span>' : ''
+  ].join('');
+  return `<article class="alerta ${crit ? 'critico' : ''}" id="al-${a.id}">
+    <div class="alerta-corpo">
+      <div class="alerta-linha1"><span class="selo">${ic(crit ? 'i-alerta' : 'i-exclama')}${crit ? 'Crítico' : 'Atenção'}</span><span class="area-tag">${esc(NOME_AREA[a.area] || a.area)}</span></div>
+      <div class="alerta-titulo">${esc(a.titulo)}</div>
+      <div class="alerta-meta">${meta}</div>
+      <div class="detalhe">${a.detalhe ? linkar(a.detalhe) : 'Sem detalhes.'}</div>
+    </div>
+    <div class="alerta-acoes">
+      <button onclick="alternar(${a.id})">${ic('i-detalhe')}Detalhes</button>
+      <button onclick="copiar(${a.id})" aria-label="Copiar">${ic('i-copiar')}Copiar</button>
+      <button onclick="resolver(${a.id}, this)">${ic('i-ok')}Resolvido</button>
+    </div>
+  </article>`;
+}
+function itemHist(h, meta) {
+  return `<div class="hist-item"><span class="hist-ponto ${h.severidade === 'critico' ? 'critico' : ''}" title="${h.severidade === 'critico' ? 'Crítico' : 'Atenção'}"></span>
+    <div class="hist-txt"><div class="hist-titulo">${esc(h.titulo)}</div><div class="hist-meta">${esc(meta)}</div></div></div>`;
+}
+
+/* ---------- ciclo ---------- */
+document.addEventListener('visibilitychange', () => { if (!document.hidden) carregar(); });
+setInterval(() => { if (!document.hidden) carregar(); }, 60000);
+setInterval(() => { if (dados) render(); }, 30000);   // mantém os "há X min" certos
+carregar();
+</script>
+</body>
+</html>
