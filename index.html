@@ -475,7 +475,7 @@ function renderCustos(c) {
   const barras = dias.map(d => {
     const v = parseFloat(d.valor) || 0;
     const cls = d.dia === ultimo ? 'hoje' : (v === 0 ? 'zero' : '');
-    return `<i class="${cls}" style="height:${Math.max(3, Math.round(v / max * 100))}%" title="${esc(fmtDiaCurto.format(new Date(d.dia + 'T12:00:00Z')))}: ${esc(brl(v))} · ${esc(d.mensagens)} mensagens"></i>`;
+    return `<i class="${cls}" style="height:${Math.max(3, Math.round(v / max * 100))}%" title="${esc(fmtDiaCurto.format(new Date(d.dia + 'T12:00:00Z')))}: ${esc(brl(v))} · ${esc(d.mensagens)} lembretes"></i>`;
   }).join('');
   el.innerHTML = `<div class="custos-topo"><strong>Custo Meta (0067)</strong><small>estimativa</small></div>
     <div class="custos-nums num">
@@ -485,7 +485,7 @@ function renderCustos(c) {
     </div>
     <div class="barras" aria-label="Custo por dia nos últimos 14 dias">${barras}</div>
     <div class="barras-leg"><span>${dias.length ? esc(fmtDiaCurto.format(new Date(dias[0].dia + 'T12:00:00Z'))) : ''}</span><span>hoje</span></div>
-    <div class="custos-nota">Lembretes + respostas da PONTE × R$ ${esc((parseFloat(String(c.preco_msg || '0.0374').replace(',', '.')) || 0.0374).toFixed(4).replace('.', ','))} por mensagem. Média por dia com envio: ${esc(brl(c.media_dia_envio))}. OpenAI e valor real da Meta: próxima parte.</div>`;
+    <div class="custos-nota">Lembretes × R$ ${esc((parseFloat(String(c.preco_msg || '0.0312').replace(',', '.')) || 0.0312).toFixed(4).replace('.', ','))} com impostos (calibrado com a fatura de 04 a 26/11). Respostas da PONTE não são cobradas. Média por dia com envio: ${esc(brl(c.media_dia_envio))}.</div>`;
   el.style.display = 'block';
 }
 function cardAlerta(a) {
