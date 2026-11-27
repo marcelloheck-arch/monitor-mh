@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- MONITOR-MH-VERSAO: 2026-11-27 etapa 2 (lembretes, datas, conversas, PONTE, infraestrutura) -->
+<!-- MONITOR-MH-VERSAO: 2026-11-27 etapa 3A (lembretes, datas, conversas, PONTE, custos Meta estimados, infraestrutura) -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -145,9 +145,27 @@ details.bloco[open] > summary .seta { transform: rotate(180deg); }
 .hist-vazio { padding: 14px; font-size: 13px; color: var(--suave); border-top: 1px solid var(--borda); }
 .rodape { font-size: 11.5px; color: var(--suave); text-align: center; margin-top: 8px; }
 
+/* CUSTOS */
+.custos { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); padding: 13px 14px 12px; margin-bottom: 14px; }
+.custos-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.custos-topo strong { font-size: 13.5px; }
+.custos-topo small { font-size: 11px; color: var(--suave); }
+.custos-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.custos-nums div { background: var(--fundo); border-radius: 10px; padding: 8px 9px; }
+.custos-nums span { display: block; font-size: 11px; color: var(--suave); margin-bottom: 2px; }
+.custos-nums b { font-size: 15px; font-weight: 700; }
+.barras { display: flex; align-items: flex-end; gap: 3px; height: 54px; }
+.barras i { flex: 1; background: var(--azul); border-radius: 3px 3px 0 0; min-height: 2px; opacity: 0.85; }
+.barras i.hoje { background: var(--marinho); opacity: 1; }
+.barras i.zero { background: var(--borda); }
+@media (prefers-color-scheme: dark) { .barras i.hoje { background: #7FC3F2; } }
+.barras-leg { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--suave); margin-top: 4px; }
+.custos-nota { font-size: 11px; color: var(--suave); margin-top: 8px; line-height: 1.45; }
+
 /* LAYOUT DESKTOP */
 .colunas { display: grid; grid-template-columns: 1fr; gap: 0 22px; }
-@media (min-width: 720px) { .semaforo { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 720px) { .semaforo { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1040px) { .semaforo { grid-template-columns: repeat(6, 1fr); } }
 @media (min-width: 1040px) {
   .colunas { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
   .lateral { position: sticky; top: 74px; }
@@ -214,6 +232,7 @@ details.bloco[open] > summary .seta { transform: rotate(180deg); }
       <div class="lista" id="lista-abertos"><div class="vazio">Carregando…</div></div>
     </section>
     <aside class="lateral">
+      <div class="custos" id="custos" style="display:none"></div>
       <details class="bloco" id="bloco-silenciados">
         <summary><span>Silenciados, ainda acontecendo</span><span style="display:flex;align-items:center;gap:8px"><span class="cont num" id="cont-silenciados">0</span><svg class="ic seta"><use href="#i-seta"/></svg></span></summary>
         <div class="bloco-desc">Você marcou como resolvido, mas a condição continua. Não avisa de novo; se o problema sumir e voltar depois, o alerta reabre.</div>
@@ -249,6 +268,7 @@ const AREAS = [
   { id: 'datas', nome: 'Datas' },
   { id: 'conversas', nome: 'Conversas' },
   { id: 'ponte', nome: 'PONTE' },
+  { id: 'custos', nome: 'Custos' },
   { id: 'infra', nome: 'Infraestrutura' }
 ];
 const NOME_AREA = Object.fromEntries(AREAS.map(a => [a.id, a.nome]));
@@ -421,7 +441,9 @@ function render() {
   document.getElementById('filtro-txt').textContent = filtroArea ? `Mostrando só ${NOME_AREA[filtroArea]}` : '';
   document.getElementById('cont-abertos').textContent = abertos.length ? `${lista.length} de ${abertos.length}` : '';
   document.getElementById('lista-abertos').innerHTML = lista.length ? lista.map(cardAlerta).join('') :
-    `<div class="vazio"><strong>${filtroArea ? 'Nada aberto em ' + esc(NOME_AREA[filtroArea]) : 'Nenhum alerta aberto'}</strong>As checagens de lembretes, datas, conversas, PONTE e infraestrutura não encontraram problema.</div>`;
+    `<div class="vazio"><strong>${filtroArea ? 'Nada aberto em ' + esc(NOME_AREA[filtroArea]) : 'Nenhum alerta aberto'}</strong>As checagens de lembretes, datas, conversas, PONTE, custos e infraestrutura não encontraram problema.</div>`;
+
+  renderCustos(dados.custos);
 
   // silenciados
   document.getElementById('cont-silenciados').textContent = silenciados.length;
@@ -441,6 +463,30 @@ function render() {
   document.getElementById('lista-historico').innerHTML = html || '<div class="hist-vazio">Nenhum alerta nos últimos 7 dias.</div>';
 
   document.getElementById('rodape').textContent = `Atualizado às ${fmtHora.format(new Date())} · atualiza sozinho a cada minuto`;
+}
+const fmtDiaCurto = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
+function brl(v) { return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ','); }
+function renderCustos(c) {
+  const el = document.getElementById('custos');
+  if (!c) { el.style.display = 'none'; return; }
+  const dias = c.dias || [];
+  const max = Math.max(0.01, ...dias.map(d => parseFloat(d.valor) || 0));
+  const ultimo = dias.length ? dias[dias.length - 1].dia : '';
+  const barras = dias.map(d => {
+    const v = parseFloat(d.valor) || 0;
+    const cls = d.dia === ultimo ? 'hoje' : (v === 0 ? 'zero' : '');
+    return `<i class="${cls}" style="height:${Math.max(3, Math.round(v / max * 100))}%" title="${esc(fmtDiaCurto.format(new Date(d.dia + 'T12:00:00Z')))}: ${esc(brl(v))} · ${esc(d.mensagens)} lembretes"></i>`;
+  }).join('');
+  el.innerHTML = `<div class="custos-topo"><strong>Custo Meta (0067)</strong><small>estimativa</small></div>
+    <div class="custos-nums num">
+      <div><span>Hoje</span><b>${esc(brl(c.hoje))}</b></div>
+      <div><span>Ontem</span><b>${esc(brl(c.ontem))}</b></div>
+      <div><span>No mês</span><b>${esc(brl(c.mes))}</b></div>
+    </div>
+    <div class="barras" aria-label="Custo por dia nos últimos 14 dias">${barras}</div>
+    <div class="barras-leg"><span>${dias.length ? esc(fmtDiaCurto.format(new Date(dias[0].dia + 'T12:00:00Z'))) : ''}</span><span>hoje</span></div>
+    <div class="custos-nota">Lembretes × R$ ${esc((parseFloat(String(c.preco_msg || '0.0312').replace(',', '.')) || 0.0312).toFixed(4).replace('.', ','))} com impostos (calibrado com a fatura de 04 a 26/11). Respostas da PONTE não são cobradas. Média por dia com envio: ${esc(brl(c.media_dia_envio))}.</div>`;
+  el.style.display = 'block';
 }
 function cardAlerta(a) {
   const crit = a.severidade === 'critico';
