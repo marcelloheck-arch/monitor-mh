@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- MONITOR-MH-VERSAO: 2026-11-25 etapa 1 (lembretes, datas, infraestrutura) -->
+<!-- MONITOR-MH-VERSAO: 2026-11-27 etapa 2 (lembretes, datas, conversas, PONTE, infraestrutura) -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -247,8 +247,8 @@ const BATIMENTO_LIMITE_MIN = 25;   // a checagem roda a cada 10 min
 const AREAS = [
   { id: 'lembretes', nome: 'Lembretes' },
   { id: 'datas', nome: 'Datas' },
-  { id: 'conversas', nome: 'Conversas', breve: true },
-  { id: 'ponte', nome: 'PONTE', breve: true },
+  { id: 'conversas', nome: 'Conversas' },
+  { id: 'ponte', nome: 'PONTE' },
   { id: 'infra', nome: 'Infraestrutura' }
 ];
 const NOME_AREA = Object.fromEntries(AREAS.map(a => [a.id, a.nome]));
@@ -421,7 +421,7 @@ function render() {
   document.getElementById('filtro-txt').textContent = filtroArea ? `Mostrando só ${NOME_AREA[filtroArea]}` : '';
   document.getElementById('cont-abertos').textContent = abertos.length ? `${lista.length} de ${abertos.length}` : '';
   document.getElementById('lista-abertos').innerHTML = lista.length ? lista.map(cardAlerta).join('') :
-    `<div class="vazio"><strong>${filtroArea ? 'Nada aberto em ' + esc(NOME_AREA[filtroArea]) : 'Nenhum alerta aberto'}</strong>As checagens de lembretes, datas e infraestrutura não encontraram problema.</div>`;
+    `<div class="vazio"><strong>${filtroArea ? 'Nada aberto em ' + esc(NOME_AREA[filtroArea]) : 'Nenhum alerta aberto'}</strong>As checagens de lembretes, datas, conversas, PONTE e infraestrutura não encontraram problema.</div>`;
 
   // silenciados
   document.getElementById('cont-silenciados').textContent = silenciados.length;
